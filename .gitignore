@@ -31,6 +31,13 @@ backend/.env
 backend/.env.*
 !backend/.env.example
 
+# SSH / crypto keys — never commit
+key
+key.pub
+id_*
+*.pem
+*.key
+
 # Database
 backend/data/
 **/cloud.db

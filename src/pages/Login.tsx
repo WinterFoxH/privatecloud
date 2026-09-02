@@ -1,20 +1,37 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Cloud, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import type { UserRole } from '../types';
+import { ApiError } from '../api/client';
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('jan@dom.local');
   const [password, setPassword] = useState('demo1234');
-  const [role, setRole] = useState<UserRole>('user');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(user.role === 'admin' ? '/admin/dashboard' : '/files', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    login(email, password, role);
-    navigate(role === 'admin' ? '/admin/dashboard' : '/files');
+    setError(null);
+    setSubmitting(true);
+    try {
+      const loggedIn = await login(email, password);
+      navigate(loggedIn.role === 'admin' ? '/admin/dashboard' : '/files');
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Logowanie nie powiodło się';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -23,10 +40,10 @@ export function Login() {
         <div className="login-header">
           <Cloud size={40} />
           <h1>PrivateCloud</h1>
-          <p>Prototyp systemu chmury prywatnej — logowanie (UC-LOG)</p>
+          <p>Logowanie — Faza 3 (JWT + API)</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={(e) => void handleSubmit(e)} className="login-form">
           <label>
             E-mail
             <div className="input-wrap">
@@ -35,7 +52,7 @@ export function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="uzytkownik@dom.local"
+                placeholder="jan@dom.local"
                 required
               />
             </div>
@@ -55,43 +72,15 @@ export function Login() {
             </div>
           </label>
 
-          <fieldset className="role-picker">
-            <legend>Rola</legend>
-            <label className="radio-card">
-              <input
-                type="radio"
-                name="role"
-                value="user"
-                checked={role === 'user'}
-                onChange={() => setRole('user')}
-              />
-              <div>
-                <strong>Użytkownik końcowy</strong>
-                <span>Pliki, multimedia, synchronizacja, udostępnianie</span>
-              </div>
-            </label>
-            <label className="radio-card">
-              <input
-                type="radio"
-                name="role"
-                value="admin"
-                checked={role === 'admin'}
-                onChange={() => setRole('admin')}
-              />
-              <div>
-                <strong>Administrator systemu</strong>
-                <span>Dashboard, pula dyskowa, monitoring</span>
-              </div>
-            </label>
-          </fieldset>
+          {error && <p style={{ color: 'var(--danger, #c0392b)' }}>{error}</p>}
 
-          <button type="submit" className="btn-primary full">
-            Zaloguj się
+          <button type="submit" className="btn-primary full" disabled={submitting}>
+            {submitting ? 'Logowanie…' : 'Zaloguj się'}
           </button>
         </form>
 
         <p className="login-hint">
-          Demo: dowolne hasło. Wybierz rolę, aby zobaczyć odpowiednie przypadki użycia.
+          Demo: jan@dom.local / demo1234 (user) lub admin@cloud.local / admin1234 (admin)
         </p>
       </div>
     </div>

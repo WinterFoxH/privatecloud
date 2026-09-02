@@ -1,18 +1,20 @@
 /**
- * Punkt wejścia serwera PrivateCloud — Faza 1.
+ * Punkt wejścia serwera PrivateCloud — Faza 3 (auth + chronione pliki).
  * Uruchom: npm run dev
  */
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const { initDb } = require('./db');
+const { initDb, seedUsers } = require('./db');
 const filesRouter = require('./routes/files');
+const { verifyToken } = require('./middleware/auth');
+const authRouter = require('./routes/auth');
 
 const PORT = process.env.PORT || 3000;
 
-// Inicjalizacja bazy przy starcie
 initDb();
+seedUsers();
 
 const app = express();
 
@@ -20,8 +22,8 @@ const app = express();
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
 // Middleware — parsowanie JSON (przyda się w kolejnych fazach)
 app.use(express.json());
 
@@ -34,7 +36,8 @@ app.get('/health', (req, res) => {
 });
 
 // Trasy plików pod /api/files
-app.use('/api/files', filesRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/files', verifyToken, filesRouter);
 
 // 404 — nieznana trasa
 app.use((req, res) => {

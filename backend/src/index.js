@@ -1,6 +1,6 @@
 /**
- * Punkt wejścia serwera PrivateCloud — Faza 3 (auth + chronione pliki).
- * Uruchom: npm run dev
+ * Punkt wejścia serwera PrivateCloud — Fazy 1–4 (auth, pliki, Docker).
+ * Lokalnie: npm run dev | Docker: docker compose up --build
  */
 require('dotenv').config();
 
@@ -13,14 +13,28 @@ const authRouter = require('./routes/auth');
 
 const PORT = process.env.PORT || 3000;
 
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'http://localhost',
+];
+
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || DEFAULT_CORS_ORIGINS.join(','))
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 initDb();
 seedUsers();
 
 const app = express();
 
-// CORS — przed innym middleware, żeby preflight OPTIONS dostał nagłówki
+// CORS — przed innym middleware, żeby preflight OPTIONS dostał nagłówki.
+// W Dockerze (nginx same-origin) przeglądarka zwykle nie potrzebuje CORS;
+// lista nadal przydatna przy bezpośrednim dostępie do API / dev.
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: CORS_ORIGINS,
   methods: ['GET', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));

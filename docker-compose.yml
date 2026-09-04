@@ -1,0 +1,47 @@
+# PrivateCloud — Faza 4: Docker Compose
+# Uruchomienie: docker compose up --build
+# UI + API: http://localhost:8080
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: privatecloud-backend
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      DATABASE_PATH: /data/db/cloud.db
+      STORAGE_ROOT: /data/storage
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-docker-min-32-characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      # Origins allowed when API is hit directly (nginx same-origin needs no CORS)
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost,http://localhost:5173}
+    volumes:
+      - ./backend/data:/data/db
+      - ./storage/data:/data/storage
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Same-origin via nginx — browser calls /api/... on :8080
+        VITE_API_URL: ""
+    container_name: privatecloud-frontend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# Redis pominięty w Fazie 4 — dodamy w Fazie 6 (kolejka sync / worker)

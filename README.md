@@ -1,23 +1,51 @@
-# PrivateCloud — prototyp (mock)
+# PrivateCloud — prototyp
 
-Interaktywny prototyp interfejsu systemu chmury prywatnej z pracy dyplomowej.
+Interaktywny prototyp systemu chmury prywatnej (praca dyplomowa).
+Frontend: React + Vite. Backend: Express + SQLite (Fazy 1–3).
 
-## Uruchomienie
+## Development (lokalnie)
 
 ```bash
-cd prototype
+# Backend
+cd backend
+cp .env.example .env   # ustaw JWT_SECRET
 npm install
-npm run dev
+npm run dev            # http://localhost:3000
+
+# Frontend (osobny terminal)
+cd ..
+echo 'VITE_API_URL=http://localhost:3000' > .env
+npm install
+npm run dev            # http://localhost:5173
 ```
 
-Otwórz http://localhost:5173
+### Konta demo (seed)
 
-## Demo logowania
+| Email | Hasło | Rola |
+|-------|-------|------|
+| `jan@dom.local` | `demo1234` | user |
+| `admin@cloud.local` | `admin1234` | admin |
 
-- **Użytkownik końcowy** — pliki, multimedia, synchronizacja, udostępnianie
-- **Administrator** — dodatkowo dashboard i pula dyskowa
+## Docker Compose (Faza 4)
 
-Hasło dowolne (to mock bez backendu).
+Jedno polecenie — UI + API przez nginx na porcie **8080**:
+
+```bash
+cp .env.example .env          # ustaw JWT_SECRET
+docker compose up --build
+```
+
+Otwórz http://localhost:8080
+
+- `/` → React (SPA)
+- `/api/*` → backend (proxy)
+- `/health` → health check API
+
+Persystencja: `./backend/data` (SQLite), `./storage/data` (pliki użytkowników).
+
+Zatrzymanie: `Ctrl+C` lub `docker compose down`. Dane w wolumenach zostają.
+
+Szczegóły: [DOCKER.md](./DOCKER.md).
 
 ## Mapowanie na przypadki użycia
 
@@ -30,5 +58,3 @@ Hasło dowolne (to mock bez backendu).
 | Udostępnianie | UC-SHR |
 | Dashboard | UC-DASH |
 | Pula dyskowa | UC-POOL |
-
-Zrzuty ekranu prototypu (Rys. 2–5) oraz diagramy UML (Rys. 1, 6–8) znajdują się w pracy dyplomowej i w katalogu `diagrams/` (źródła PlantUML).

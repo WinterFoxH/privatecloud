@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+*.md
+.env
+.env.*
+!.env.example
+backend
+storage
+key
+key.pub
+*.local
+.vscode
+.idea
+docker-compose*.yml

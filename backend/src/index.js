@@ -6,10 +6,12 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const { initDb, seedUsers } = require('./db');
+const { initDb, seedUsers, seedDisks } = require('./db');
 const filesRouter = require('./routes/files');
-const { verifyToken } = require('./middleware/auth');
+const { verifyToken, requireAdmin } = require('./middleware/auth');
 const authRouter = require('./routes/auth');
+const disksRouter = require('./routes/disks');
+
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,7 +29,7 @@ const CORS_ORIGINS = (process.env.CORS_ORIGINS || DEFAULT_CORS_ORIGINS.join(',')
 
 initDb();
 seedUsers();
-
+seedDisks();
 const app = express();
 
 // CORS — przed innym middleware, żeby preflight OPTIONS dostał nagłówki.
@@ -52,6 +54,7 @@ app.get('/health', (req, res) => {
 // Trasy plików pod /api/files
 app.use('/api/auth', authRouter);
 app.use('/api/files', verifyToken, filesRouter);
+app.use('/api/admin/disks', verifyToken, requireAdmin, disksRouter);
 
 // 404 — nieznana trasa
 app.use((req, res) => {

@@ -47,6 +47,21 @@ function initDb() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_files_in_trash ON files(in_trash);
+
+    CREATE TABLE IF NOT EXISTS disks (
+     id TEXT PRIMARY KEY,
+     label TEXT NOT NULL,
+     interface TEXT NOT NULL CHECK(interface IN ('USB', 'SATA')),
+     mount_path TEXT NOT NULL,
+     capacity_bytes INTEGER NOT NULL DEFAULT 0,
+     used_bytes INTEGER NOT NULL DEFAULT 0,
+     status TEXT NOT NULL DEFAULT 'pending'
+     CHECK(status IN ('pending', 'active', 'offline')),
+   added_at TEXT NOT NULL
+
+   );
+
+      CREATE INDEX IF NOT EXISTS idx_disks_status ON disks(status);
   `);
 
   if (!columnExists('files', 'user_id')) {
@@ -127,10 +142,42 @@ function userToPublic(row) {
   };
 }
 
+function seedDisks() {
+  const count = db.prepare('SELECT COUNT(*) AS c FROM disks').get().c;
+  if (count > 0) return;
+
+  const disksRoot = path.resolve(
+    process.env.DISKS_ROOT || path.join(__dirname, '../../storage/disks'),
+  );
+  if (!fs.existsSync(disksRoot)) {
+    fs.mkdirSync(disksRoot, { recursive: true });
+  }
+
+  const now = new Date().toISOString();
+  const insert = db.prepare(`
+    INSERT INTO disks (id, label, interface, mount_path, capacity_bytes, used_bytes, status, added_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const demos = [
+    ['SSD Systemowy', 'SATA', 'disk-ssd-system', 500e9, 312e9, 'active'],
+    ['HDD Archiwum', 'SATA', 'disk-hdd-archive', 2000e9, 1450e9, 'active'],
+    ['USB Backup', 'USB', 'disk-usb-backup', 1000e9, 0, 'pending'],
+  ];
+
+  for (const [label, iface, mountPath, cap, used, status] of demos) {
+    insert.run(crypto.randomUUID(), label, iface, mountPath, cap, used, status, now);
+    fs.mkdirSync(path.join(disksRoot, mountPath), { recursive: true });
+  }
+
+  console.log('[db] Seed dysków demo (3 wolumeny)');
+}
+
 module.exports = {
   db,
   initDb,
   seedUsers,
+  seedDisks,
   getUserByEmail,
   findUserByEmail,
   findUserById,

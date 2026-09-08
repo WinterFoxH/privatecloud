@@ -7,6 +7,7 @@ import { Files } from './pages/Files';
 import { Media } from './pages/Media';
 import { Sync } from './pages/Sync';
 import { Sharing } from './pages/Sharing';
+import { PublicShare } from './pages/PublicShare';
 import { Dashboard } from './pages/admin/Dashboard';
 import { DiskPool } from './pages/admin/DiskPool';
 import { UseCaseDiagram } from './pages/UseCaseDiagram';
@@ -17,6 +18,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/s/:token" element={<PublicShare />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route index element={<Navigate to="/files" replace />} />

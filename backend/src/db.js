@@ -62,6 +62,35 @@ function initDb() {
    );
 
       CREATE INDEX IF NOT EXISTS idx_disks_status ON disks(status);
+
+    CREATE TABLE IF NOT EXISTS shares (
+      id              TEXT PRIMARY KEY,
+      token           TEXT NOT NULL UNIQUE,
+      file_id         TEXT NOT NULL REFERENCES files(id),
+      owner_id        TEXT NOT NULL REFERENCES users(id),
+      password_hash   TEXT,
+      expires_at      TEXT NOT NULL,
+      download_count  INTEGER NOT NULL DEFAULT 0,
+      created_at      TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_shares_token ON shares(token);
+    CREATE INDEX IF NOT EXISTS idx_shares_owner ON shares(owner_id);
+
+    CREATE TABLE IF NOT EXISTS sync_jobs (
+      id            TEXT PRIMARY KEY,
+      user_id       TEXT NOT NULL REFERENCES users(id),
+      device        TEXT NOT NULL,
+      status        TEXT NOT NULL DEFAULT 'idle'
+                    CHECK(status IN ('running', 'idle', 'paused', 'error')),
+      progress      INTEGER NOT NULL DEFAULT 0,
+      files_queued  INTEGER NOT NULL DEFAULT 0,
+      last_sync     TEXT,
+      created_at    TEXT NOT NULL,
+      updated_at    TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sync_jobs_user ON sync_jobs(user_id);
   `);
 
   if (!columnExists('files', 'user_id')) {
@@ -173,11 +202,35 @@ function seedDisks() {
   console.log('[db] Seed dysków demo (3 wolumeny)');
 }
 
+function seedSyncJobs() {
+  const count = db.prepare('SELECT COUNT(*) AS c FROM sync_jobs').get().c;
+  if (count > 0) return;
+
+  const jan = findUserByEmail('jan@dom.local');
+  const admin = findUserByEmail('admin@cloud.local');
+  if (!jan) return;
+
+  const now = new Date().toISOString();
+  const insert = db.prepare(`
+    INSERT INTO sync_jobs (id, user_id, device, status, progress, files_queued, last_sync, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insert.run(crypto.randomUUID(), jan.id, 'Android — Pixel', 'running', 35, 12, now, now, now);
+  insert.run(crypto.randomUUID(), jan.id, 'Laptop — Arch', 'idle', 100, 0, now, now, now);
+  if (admin) {
+    insert.run(crypto.randomUUID(), admin.id, 'Tablet — iPad', 'paused', 20, 5, now, now, now);
+  }
+
+  console.log('[db] Seed sync_jobs demo');
+}
+
 module.exports = {
   db,
   initDb,
   seedUsers,
   seedDisks,
+  seedSyncJobs,
   getUserByEmail,
   findUserByEmail,
   findUserById,

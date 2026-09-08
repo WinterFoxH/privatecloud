@@ -15,11 +15,14 @@ services:
       STORAGE_ROOT: /data/storage
       JWT_SECRET: ${JWT_SECRET:-change-me-in-docker-min-32-characters}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      DISKS_ROOT: /data/disks
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
       # Origins allowed when API is hit directly (nginx same-origin needs no CORS)
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost,http://localhost:5173}
     volumes:
       - ./backend/data:/data/db
       - ./storage/data:/data/storage
+      - ./storage/disks:/data/disks
     expose:
       - "3000"
     healthcheck:
